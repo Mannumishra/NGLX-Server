@@ -11,7 +11,7 @@ const razorpay = new Razorpay({
 const createCheckout = async (req, res) => {
     try {
         console.log(req.body)
-        const { userId, name, email, phone, address, state, city, pin, cartItems, totalPrice, transactionId, orderStatus, paymentMode, paymentStatus } = req.body;
+        const { userId, name, email, phone, address, state, city, pin, cartItems, totalPrice, transactionId, orderStatus, paymentMode, paymentStatus, finalAmount, shippingFee } = req.body;
         const errorMessage = [];
         if (!userId) errorMessage.push("UserId is required.");
         if (!name) errorMessage.push("Name is required.");
@@ -41,7 +41,8 @@ const createCheckout = async (req, res) => {
                 transactionId: null,
                 orderStatus,
                 paymentMode,
-                paymentStatus: 'Pending'
+                paymentStatus: 'Pending',
+                finalAmount, shippingFee
             });
             const savedCheckout = await newCheckout.save();
             // Send confirmation email
@@ -85,12 +86,10 @@ const createCheckout = async (req, res) => {
                 currency: 'INR',
                 receipt: `receipt_${Date.now()}`, // Unique receipt ID
             };
-
             const order = await razorpay.orders.create(options);
             if (!order) {
                 return res.status(500).json({ message: "Razorpay order creation failed." });
             }
-
             const newCheckout = new Checkout({
                 userId,
                 name,
@@ -105,7 +104,8 @@ const createCheckout = async (req, res) => {
                 transactionId: order.id, // Save the Razorpay Order ID
                 orderStatus: 'Pending',
                 paymentMode,
-                paymentStatus: 'Pending' // Payment is pending until verified
+                paymentStatus: 'Pending', // Payment is pending until verified ,
+                finalAmount, shippingFee
             });
             const savedCheckout = await newCheckout.save();
             res.status(200).json({
@@ -119,6 +119,21 @@ const createCheckout = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error occurred while creating checkout." });
+    }
+};
+
+const createRazorpayOrder = async (amount) => {
+    try {
+        const options = {
+            amount: Math.round(amount * 100), // Convert to paise
+            currency: 'INR',
+            receipt: `receipt_${Date.now()}`, // Unique receipt ID
+        };
+        const order = await razorpay.orders.create(options);
+        return order;
+    } catch (error) {
+        console.error('Error creating Razorpay order:', error);
+        return null;
     }
 };
 
@@ -157,6 +172,7 @@ const verifyPayment = async (req, res) => {
 
 const getAllCheckouts = async (req, res) => {
     try {
+        // console.log("I am hit")
         const checkouts = await Checkout.find({});
         res.status(200).json(checkouts);
     } catch (error) {
@@ -168,6 +184,7 @@ const getAllCheckouts = async (req, res) => {
 const getCheckoutById = async (req, res) => {
     try {
         const { id } = req.params;
+        console.log(id)
         const checkout = await Checkout.findById(id);
         if (!checkout) {
             return res.status(404).json({ message: "Checkout not found." });
@@ -226,6 +243,31 @@ const getCheckOutByUserID = async (req, res) => {
     }
 };
 
+const cancelOrder = async (req, res) => {
+    try {
+        const { id } = req.params; // Get the order ID from the request parameters
+
+        // Find and update the order status to 'Cancelled'
+        const updatedOrder = await Checkout.findByIdAndUpdate(
+            id,
+            { orderStatus: 'Cancelled' }, // Assuming 'Cancelled' is a valid status in your system
+            { new: true, runValidators: true } // Return the updated document and run validators
+        );
+
+        // Check if the order was found and updated
+        if (!updatedOrder) {
+            return res.status(404).json({ message: "Order not found." });
+        }
+
+        // Send a successful response with the updated order
+        res.status(200).json({ message: "Order cancelled successfully.", updatedOrder });
+    } catch (error) {
+        // Log the error and send a server error response
+        console.error('Error cancelling the order:', error);
+        res.status(500).json({ message: "Server error occurred while cancelling the order." });
+    }
+};
+
 
 
 module.exports = {
@@ -236,4 +278,5 @@ module.exports = {
     updateCheckoutStatus,
     getCheckOutByUserID,
     verifyPayment,
+    cancelOrder
 };

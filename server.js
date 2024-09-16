@@ -10,6 +10,7 @@ const routes = require('./routes/routes')
 const path = require("path");
 const ConnectDB = require('./config/Db')
 const bodyParser = require('body-parser');
+
 //=======Middllewares==============================
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))

@@ -1,9 +1,9 @@
 const express = require('express')
 const productController = require('../controllers/ProductController');
 const routes = express.Router()
-const { register, LoginUser, Logout, getAllUsers, getTokenFromCookies, verifyOtpForSignIn, ResendSignOtp, PasswordChangeRequest, VerifyOtp } = require('../controllers/Usercontrollers')
 const { isAuthenticatedUser } = require('../middlewares/auth')
-const { createCheckout, getAllCheckouts, getCheckoutById, updateCheckoutStatus, deleteCheckout, getCheckOutByUserID, verifyPayment } = require('../controllers/OrderController')
+const { createUser, updateUser, getAllUser, getGetSingleUser, login, forgetPassword1, forgetPassword2, forgetPassword3, changePassword } = require("../controllers/Usercontrollers")
+const { createCheckout, getAllCheckouts, getCheckoutById, updateCheckoutStatus, deleteCheckout, getCheckOutByUserID, verifyPayment, cancelOrder } = require('../controllers/OrderController')
 const { createBanner, createCategory, makeTag, getAllBanners, deleteBanner, getAllCategories, updateCategory, deleteCategory, getAllTags, updateTag, deleteTag, updateBanner } = require('../controllers/webpage')
 const { ShipRocketLogin, MakeOrderReadyToShip } = require('../controllers/Shiprocket')
 const { RedirectCategoryMake, GetAllRedirectCat, DeleteRedirectCategory } = require('../controllers/Redirect')
@@ -16,18 +16,15 @@ const upload = require('../utils/multerConfig');
 
 
 //====================USER ROUTES=========================//
-routes.post('/register', register)
-routes.post('/Verify-sign-Otp', verifyOtpForSignIn)
-routes.post('/resend-sign-Otp', ResendSignOtp)
-routes.post('/Password-change-request', PasswordChangeRequest)
-
-routes.post('/Verify-Otp/:email/:newPassword', VerifyOtp)
-
-
-routes.post('/login', LoginUser)
-routes.get('/Logout', isAuthenticatedUser, Logout)
-routes.get('/All-users', getAllUsers)
-routes.get('/Token', isAuthenticatedUser, getTokenFromCookies)
+routes.post("/user", upload.SingleUpload, createUser)
+routes.put("/user/:id", updateUser)
+routes.get("/user", getAllUser)
+routes.get("/user/:id", getGetSingleUser)
+routes.post("/user/login", login)
+routes.post("/forget-password/send-otp", forgetPassword1)
+routes.post("/forget-password/verify-otp", forgetPassword2)
+routes.post("/forget-password/reset-password", forgetPassword3)
+routes.post("/user/chnage-password", changePassword)
 
 //====================PRODUCT ROUTES=========================//
 routes.post('/createProduct', upload.multerUploads, productController.createProducts);
@@ -68,14 +65,14 @@ routes.get('/all-redirect', GetAllRedirectCat)
 routes.delete('/delete-redirect/:id', DeleteRedirectCategory)
 
 
-//====================ORDERS ROUTES=========================//
-routes.post("/checkout", createCheckout)
+routes.post("/checkout", createCheckout);
 routes.get('/checkouts', getAllCheckouts);
 routes.get('/checkout/:id', getCheckoutById);
 routes.put('/checkout/:id', updateCheckoutStatus);
+routes.put('/checkout/cancel/:id', cancelOrder);
 routes.delete('/checkout/:id', deleteCheckout);
 routes.get('/checkout/user/:userId', getCheckOutByUserID);
-routes.post("/verify-payment", verifyPayment)
+routes.post("/verify-payment", verifyPayment);
 
 
 

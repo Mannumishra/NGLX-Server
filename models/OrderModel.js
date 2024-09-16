@@ -73,6 +73,13 @@ const checkoutSchema = new mongoose.Schema({
         enum: ['Online Payment', 'Cash on Delivery'],
         default: "Online Payment"
     },
+    finalAmount: {
+        type: Number,
+        required: true
+    },
+    shippingFee: {
+        type: Number,
+    },
     orderDate: {
         type: Date,
         default: Date.now
